@@ -44,8 +44,8 @@ class DBStorage:
         objects = {}
         if cls is None:
             classes = [City, State, Place, Amenity, Review, User]
-            for clas in classes:
-                for obj in DBStorage.__session.query(clas):
+            for cls in classes:
+                for obj in DBStorage.__session.query(cls):
                     objects["{}.{}".format(clas.__name__, obj.id)] = obj
         else:
             for obj in DBStorage.__session.query(cls):

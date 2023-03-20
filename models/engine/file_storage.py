@@ -57,6 +57,7 @@ class FileStorage:
         """
         delete removes the instance obj is not None from the private class
         attribute __objects
+
         :param obj: is the object to be removed
         """
         if obj is None:
@@ -67,6 +68,8 @@ class FileStorage:
 
     def close(self):
         """TODO: Docstring for close.
+
         :returns: TODO
+
         """
         self.reload()
