@@ -11,13 +11,9 @@ class FileStorage:
     def all(self, cls=None):
         """Returns a dictionary of models currently in storage"""
         if cls is None:
-            return self.__objects
-        cls_name = cls.__name__
-        dct = {}
-        for key in self.__objects.keys():
-            if key.split('.')[0] == cls_name:
-                dct[key] = self.__objects[key]
-        return dct
+            return FileStorage.__objects
+        return {k: v for k, v in FileStorage.__objects.items(
+        ) if re.match("^{}\\..*".format(cls.__name__), k)}
 
     def new(self, obj):
         """Adds new object to storage dictionary"""
@@ -64,9 +60,9 @@ class FileStorage:
         '''
         if obj is None:
             return
-        obj_key = obj.to_dict()['__class__'] + '.' + obj.id
-        if obj_key in self.__objects.keys():
-            del self.__objects[obj_key]
+        id = "{}.{}".format(obj.__class__.__name__, obj.id)
+        del FileStorage.__objects[id]
+        self.save()
 
     def close(self):
         """Call the reload method"""
