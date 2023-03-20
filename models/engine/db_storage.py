@@ -31,6 +31,7 @@ class DBStorage:
         """
         all returns all instance of the given class from the database
         if cls is None it returns all objects stored in the database
+
         :param cls: is the class of object to retrieve from the database
         :return: is a dictionary of objects ids to object values
         """
@@ -54,6 +55,7 @@ class DBStorage:
     def new(self, obj):
         """
         new adds the given object into the current database session
+
         :param obj: is the object to be add the current database session
         """
         DBStorage.__session.add(obj)
@@ -67,6 +69,7 @@ class DBStorage:
     def delete(self, obj=None):
         """
         delete removes an instance from the current session if not None
+
         :param obj: is the object instance to remove from the current session
         """
         if obj is not None:
