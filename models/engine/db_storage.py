@@ -1,102 +1,94 @@
 #!/usr/bin/python3
-""" DataBase Storage """
-
+"""This module defines a class to handle Database storage"""
 import os
-from models.base_model import Base
-from models.amenity import Amenity
-from models.city import City
-from models.place import Place
-from models.state import State
-from models.review import Review
-from models.user import User
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
-name2class = {
-    'Amenity': Amenity,
-    'City': City,
-    'Place': Place,
-    'State': State,
-    'Review': Review,
-    'User': User
-}
+from sqlalchemy import create_engine, inspect, Column, Integer
+from sqlalchemy.orm import sessionmaker
 
 
 class DBStorage:
-    """Database Storage"""
+    """This class provides blueprints for objects that can interact
+    with a MySQL db"""
     __engine = None
     __session = None
 
     def __init__(self):
-        """Initializes the object"""
-        user = os.getenv('HBNB_MYSQL_USER')
-        passwd = os.getenv('HBNB_MYSQL_PWD')
-        host = os.getenv('HBNB_MYSQL_HOST')
-        database = os.getenv('HBNB_MYSQL_DB')
-        self.__engine = create_engine('mysql+mysqldb://{}:{}@{}/{}'
-                                      .format(user, passwd, host, database))
-        if os.getenv('HBNB_ENV') == 'test':
-            Base.metadata.drop_all(self.__engine)
+        """Initializes the DBStorage engine object"""
+        url = 'mysql+mysqldb://{}:{}@{}/{}'.format(
+            os.getenv("HBNB_MYSQL_USER"), os.getenv(
+                "HBNB_MYSQL_PWD"), os.getenv("HBNB_MYSQL_HOST"),
+            os.getenv("HBNB_MYSQL_DB"))
+
+        DBStorage.__engine = create_engine(url, pool_pre_ping=True)
+        # Drop all tables if in test mode
+        if os.getenv("HBNB_ENV") == "test":
+            with DBStorage.__engine.connect() as conn:
+                for table in ['reviews', 'place_amenity', 'places',
+                              'cities', 'states', 'amenities', 'users']:
+                    conn.execute(
+                        "DROP TABLE IF EXISTS {}".format(table))
 
     def all(self, cls=None):
-        """returns a dictionary of all the objects present"""
-        if not self.__session:
-            self.reload()
+        """
+        all returns all instance of the given class from the database
+        if cls is None it returns all objects stored in the database
+        :param cls: is the class of object to retrieve from the database
+        :return: is a dictionary of objects ids to object values
+        """
+        from models.user import User
+        from models.state import State
+        from models.city import City
+        from models.amenity import Amenity
+        from models.place import Place
+        from models.review import Review
         objects = {}
-        if type(cls) == str:
-            cls = name2class.get(cls, None)
-        if cls:
-            for obj in self.__session.query(cls):
-                objects[obj.__class__.__name__ + '.' + obj.id] = obj
+        if cls is None:
+            classes = [City, State, Place, Amenity, Review, User]
+            for clas in classes:
+                for obj in DBStorage.__session.query(clas):
+                    objects["{}.{}".format(clas.__name__, obj.id)] = obj
         else:
-            for cls in name2class.values():
-                for obj in self.__session.query(cls):
-                    objects[obj.__class__.__name__ + '.' + obj.id] = obj
+            for obj in DBStorage.__session.query(cls):
+                objects["{}.{}".format(cls.__name__, obj.id)] = obj
         return objects
 
-    def reload(self):
-        """reloads objects from the database"""
-        session_factory = sessionmaker(bind=self.__engine,
-                                       expire_on_commit=False)
-        Base.metadata.create_all(self.__engine)
-        self.__session = scoped_session(session_factory)
-
     def new(self, obj):
-        """creates a new object"""
-        self.__session.add(obj)
+        """
+        new adds the given object into the current database session
+        :param obj: is the object to be add the current database session
+        """
+        DBStorage.__session.add(obj)
 
     def save(self):
-        """saves the current session"""
-        self.__session.commit()
+        """
+        save commits the current session to the database
+        """
+        DBStorage.__session.commit()
 
     def delete(self, obj=None):
-        """deletes an object"""
-        if not self.__session:
-            self.reload()
-        if obj:
-            self.__session.delete(obj)
+        """
+        delete removes an instance from the current session if not None
+        :param obj: is the object instance to remove from the current session
+        """
+        if obj is not None:
+            DBStorage.__session.delete(obj)
+            self.save()
+
+    def reload(self):
+        """
+        reload creates all tables if necessary and assign a database
+        session object to the private class attribute __session
+        """
+        from models.base_model import Base, BaseModel
+        from models.city import City
+        from models.state import State
+        from models.user import User
+        from models.amenity import Amenity
+        from models.place import Place
+        from models.review import Review
+        Base.metadata.create_all(DBStorage.__engine)
+        DBStorage.__session = sessionmaker(
+            bind=DBStorage.__engine, expire_on_commit=False)()
 
     def close(self):
-        """Dispose of current session if active"""
-        self.__session.remove()
-
-    def get(self, cls, id):
-        """Retrieve an object"""
-        if cls is not None and type(cls) is str and id is not None and\
-           type(id) is str and cls in name2class:
-            cls = name2class[cls]
-            result = self.__session.query(cls).filter(cls.id == id).first()
-            return result
-        else:
-            return None
-
-    def count(self, cls=None):
-        """Count number of objects in storage"""
-        total = 0
-        if type(cls) == str and cls in name2class:
-            cls = name2class[cls]
-            total = self.__session.query(cls).count()
-        elif cls is None:
-            for cls in name2class.values():
-                total += self.__session.query(cls).count()
-        return total
-
+        """Closes the storage engine."""
+        self.__session.close()
