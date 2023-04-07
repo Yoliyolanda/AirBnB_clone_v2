@@ -6,7 +6,8 @@ import os
 
 env.hosts = ['100.25.180.155', '100.26.173.28']
 env.user = 'ubuntu'
-env.key_filename = '~/.ssh/school' 
+env.key_filename = '~/.ssh/school'
+
 
 def do_deploy(archive_path):
     """ Deploys files to server"""
@@ -26,5 +27,5 @@ def do_deploy(archive_path):
         run("rm -rf /data/web_static/current")
         run("ln -s {} /data/web_static/current".format(archive_folder))
         return True
-    except:
+    except Exception:
         return False
