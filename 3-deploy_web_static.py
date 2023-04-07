@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-"""This sript  creates and distributes an archive to your web servers, using the function deploy"""
+"""
+This sript  creates and distributes an archive to your web servers
+"""
 import os.path
 import time
 from fabric.api import local
@@ -16,7 +18,7 @@ def do_pack():
               format(time.strftime("%Y%m%d%H%M%S")))
         return ("versions/web_static_{}.tgz".format(time.
                                                     strftime("%Y%m%d%H%M%S")))
-    except:
+    except Exception:
         return None
 
 
@@ -38,7 +40,7 @@ def do_deploy(archive_path):
         run("ln -s {} /data/web_static/current".format(folder))
         print("Deployment done")
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -47,5 +49,5 @@ def deploy():
     try:
         path = do_pack()
         return do_deploy(path)
-    except:
+    except Exception:
         return False
